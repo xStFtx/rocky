@@ -1,15 +1,24 @@
 use sha2::{Sha256, Digest};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::fmt::Write;
+use log::{info, error};
 
-pub fn calculate_hash(index: u32, timestamp: u64, data: &str, previous_hash: &str, nonce: u64) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(format!("{}{}{}{}{}", index, timestamp, data, previous_hash, nonce));
-    format!("{:x}", hasher.finalize())
+pub struct HashInput<'a> {
+    index: u32,
+    timestamp: u64,
+    data: &'a str,
+    previous_hash: &'a str,
+    nonce: u64,
+    // Add more fields if needed
 }
 
-pub fn current_timestamp() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards")
-        .as_secs()
+pub fn calculate_hash(input: HashInput) -> Result<String, Box<dyn std::error::Error>> {
+    let mut hasher = Sha256::new();
+    hasher.update(format!("{}{}{}{}{}", input.index, input.timestamp, input.data, input.previous_hash, input.nonce));
+
+    let mut hash_hex = String::new();
+    for byte in hasher.finalize().iter() {
+        write!(&mut hash_hex, "{:02x}", byte)?;
+    }
+
+    Ok(hash_hex)
 }
