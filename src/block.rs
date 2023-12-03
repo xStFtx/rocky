@@ -1,5 +1,5 @@
 use crate::transaction::Transaction;
-use crate::utils::calculate_hash;
+use crate::utils::{calculate_hash, HashInput};
 use serde_json::json;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::fmt;
@@ -15,24 +15,38 @@ pub struct Block {
 }
 
 impl Block {
-    pub fn new(index: u32, transactions: Vec<Transaction>, previous_hash: String) -> Block {
-        let timestamp = match SystemTime::now().duration_since(UNIX_EPOCH) {
-            Ok(duration) => duration.as_secs(),
-            Err(_) => panic!("SystemTime before UNIX EPOCH!"),
-        };
+    pub fn new(index: u32, transactions: Vec<Transaction>, previous_hash: String) -> Result<Block, Box<dyn std::error::Error>> {
+        let timestamp = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("Time went backwards")
+            .as_secs();
         let nonce = 0;
         let data = json!(&transactions).to_string();
-        let hash = calculate_hash(index, timestamp, &data, &previous_hash, nonce);
-        Block { index, timestamp, transactions, previous_hash, hash, nonce }
+
+        // Construct HashInput using the public constructor
+        let input = HashInput::new(index, timestamp, &data, &previous_hash, nonce);
+        let hash = calculate_hash(input)?;
+
+        Ok(Block {
+            index,
+            timestamp,
+            transactions,
+            previous_hash,
+            hash,
+            nonce,
+        })
     }
 
-    pub fn genesis() -> Block {
-        Block::new(0, Vec::new(), String::from("0"))
+    pub fn genesis() -> Result<Block, Box<dyn std::error::Error>> {
+        Block::new(0, vec![], String::from("0"))
     }
 
-    pub fn calculate_hash_with_nonce(&self, nonce: u64) -> String {
+    pub fn calculate_hash_with_nonce(&self, nonce: u64) -> Result<String, Box<dyn std::error::Error>> {
         let data = json!(&self.transactions).to_string();
-        calculate_hash(self.index, self.timestamp, &data, &self.previous_hash, nonce)
+
+        // Construct HashInput using the public constructor
+        let input = HashInput::new(self.index, self.timestamp, &data, &self.previous_hash, nonce);
+        calculate_hash(input)
     }
 }
 

@@ -1,6 +1,5 @@
 use sha2::{Sha256, Digest};
 use std::fmt::Write;
-use log::{info, error};
 
 pub struct HashInput<'a> {
     index: u32,
@@ -8,7 +7,18 @@ pub struct HashInput<'a> {
     data: &'a str,
     previous_hash: &'a str,
     nonce: u64,
-    // Add more fields if needed
+}
+
+impl<'a> HashInput<'a> {
+    pub fn new(index: u32, timestamp: u64, data: &'a str, previous_hash: &'a str, nonce: u64) -> HashInput<'a> {
+        HashInput {
+            index,
+            timestamp,
+            data,
+            previous_hash,
+            nonce,
+        }
+    }
 }
 
 pub fn calculate_hash(input: HashInput) -> Result<String, Box<dyn std::error::Error>> {
